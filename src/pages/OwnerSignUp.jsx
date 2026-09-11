@@ -6,9 +6,12 @@ import {
 } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../firebase.js";
+import { useLanguage } from "../i18n.jsx";
+import LanguageToggle from "../components/LanguageToggle.jsx";
 
 // स्टेप: 1 = फोन नंबर डालना, 2 = OTP डालना, 3 = रेस्टोरेंट का नाम डालना
 export default function OwnerSignUp() {
+  const { t } = useLanguage();
   const [step, setStep] = useState(1);
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
@@ -31,7 +34,7 @@ export default function OwnerSignUp() {
     e.preventDefault();
     setError("");
     if (!/^\d{10}$/.test(phone)) {
-      setError("कृपया 10 अंकों का सही मोबाइल नंबर डालें (बिना +91 के)।");
+      setError(t("errorPhoneInvalid"));
       return;
     }
     setLoading(true);
@@ -43,7 +46,7 @@ export default function OwnerSignUp() {
       setStep(2);
     } catch (err) {
       console.error(err);
-      setError("OTP भेजने में दिक्कत आई। थोड़ी देर में दोबारा कोशिश करें।");
+      setError(t("errorOtpSendFail"));
     } finally {
       setLoading(false);
     }
@@ -53,7 +56,7 @@ export default function OwnerSignUp() {
     e.preventDefault();
     setError("");
     if (otp.length !== 6) {
-      setError("6 अंकों का OTP डालें।");
+      setError(t("errorOtpInvalid"));
       return;
     }
     setLoading(true);
@@ -62,7 +65,7 @@ export default function OwnerSignUp() {
       setStep(3);
     } catch (err) {
       console.error(err);
-      setError("गलत OTP। दोबारा कोशिश करें।");
+      setError(t("errorOtpWrong"));
     } finally {
       setLoading(false);
     }
@@ -72,7 +75,7 @@ export default function OwnerSignUp() {
     e.preventDefault();
     setError("");
     if (!restaurantName.trim()) {
-      setError("रेस्टोरेंट का नाम डालें।");
+      setError(t("errorNameEmpty"));
       return;
     }
     setLoading(true);
@@ -87,7 +90,7 @@ export default function OwnerSignUp() {
       navigate("/dashboard");
     } catch (err) {
       console.error(err);
-      setError("प्रोफाइल सेव करने में दिक्कत आई। दोबारा कोशिश करें।");
+      setError(t("errorSaveFail"));
     } finally {
       setLoading(false);
     }
@@ -95,23 +98,25 @@ export default function OwnerSignUp() {
 
   return (
     <div className="screen">
+      <LanguageToggle />
+
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 26, fontWeight: 600 }}>रेस्टोरेंट रजिस्टर करें</h1>
+        <h1 style={{ fontSize: 26, fontWeight: 600 }}>{t("signupTitle")}</h1>
         <p className="muted" style={{ marginTop: 6 }}>
-          {step === 1 && "अपना मोबाइल नंबर डालें, हम OTP भेजेंगे।"}
-          {step === 2 && "मोबाइल पर आया 6 अंकों का OTP डालें।"}
-          {step === 3 && "अब अपने रेस्टोरेंट का नाम बताएं।"}
+          {step === 1 && t("subtitleStep1")}
+          {step === 2 && t("subtitleStep2")}
+          {step === 3 && t("subtitleStep3")}
         </p>
       </div>
 
       <div className="card">
         {step === 1 && (
           <form onSubmit={handleSendOtp}>
-            <label className="muted">मोबाइल नंबर</label>
+            <label className="muted">{t("mobileLabel")}</label>
             <input
               className="field"
               type="tel"
-              placeholder="जैसे 9876543210"
+              placeholder={t("mobilePlaceholder")}
               value={phone}
               onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
               maxLength={10}
@@ -119,18 +124,18 @@ export default function OwnerSignUp() {
             />
             {error && <div className="error-text">{error}</div>}
             <button className="btn-primary" disabled={loading} type="submit">
-              {loading ? "भेजा जा रहा है..." : "OTP भेजें"}
+              {loading ? t("sendingBtn") : t("sendOtpBtn")}
             </button>
           </form>
         )}
 
         {step === 2 && (
           <form onSubmit={handleVerifyOtp}>
-            <label className="muted">OTP</label>
+            <label className="muted">{t("otpLabel")}</label>
             <input
               className="field"
               type="text"
-              placeholder="6 अंकों का OTP"
+              placeholder={t("otpPlaceholder")}
               value={otp}
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
               maxLength={6}
@@ -138,25 +143,25 @@ export default function OwnerSignUp() {
             />
             {error && <div className="error-text">{error}</div>}
             <button className="btn-primary" disabled={loading} type="submit">
-              {loading ? "जांचा जा रहा है..." : "वेरिफाई करें"}
+              {loading ? t("verifyingBtn") : t("verifyOtpBtn")}
             </button>
           </form>
         )}
 
         {step === 3 && (
           <form onSubmit={handleSaveRestaurant}>
-            <label className="muted">रेस्टोरेंट का नाम</label>
+            <label className="muted">{t("restaurantNameLabel")}</label>
             <input
               className="field"
               type="text"
-              placeholder="जैसे स्वाद रेस्टोरेंट"
+              placeholder={t("restaurantNamePlaceholder")}
               value={restaurantName}
               onChange={(e) => setRestaurantName(e.target.value)}
               style={{ marginTop: 6 }}
             />
             {error && <div className="error-text">{error}</div>}
             <button className="btn-primary" disabled={loading} type="submit">
-              {loading ? "सेव हो रहा है..." : "आगे बढ़ें"}
+              {loading ? t("savingBtn") : t("continueBtn")}
             </button>
           </form>
         )}
