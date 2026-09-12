@@ -1,0 +1,19 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /restaurants/{restaurantId} {
+      // कोई भी (बिना लॉगिन के भी) रेस्टोरेंट प्रोफाइल पढ़ सकता है — कस्टमर के मेन्यू पेज के लिए ज़रूरी है
+      allow read: if true;
+      // सिर्फ वही ओनर अपनी प्रोफाइल में बदलाव कर सकता है, जिसका UID इस डॉक्यूमेंट के नाम जैसा है
+      allow write: if request.auth != null && request.auth.uid == restaurantId;
+
+      match /menuItems/{itemId} {
+        // कोई भी मेन्यू आइटम पढ़ सकता है — कस्टमर मेन्यू देखने के लिए ज़रूरी है
+        allow read: if true;
+        // सिर्फ उस रेस्टोरेंट का ओनर ही अपने मेन्यू में आइटम जोड़/हटा/बदल सकता है
+        allow write: if request.auth != null && request.auth.uid == restaurantId;
+      }
+    }
+  }
+}
