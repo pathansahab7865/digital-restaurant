@@ -2,7 +2,7 @@
 
 // ये वो ईमेल है जिससे आप (एडमिन) लॉगिन करके Admin Panel खोलेंगे।
 // यही ईमेल उसी तरीके से लॉगिन होगा जैसे रेस्टोरेंट ओनर होते हैं (Email Link से) — बस इस ईमेल से लॉगिन करने पर आपको Admin Panel का एक्सेस मिलेगा।
-export const ADMIN_EMAIL = "IS87939879@gmail.com";
+export const ADMIN_EMAIL = "I87939879@gmail.com";
 
 // ये आपकी अपनी UPI ID है, जिस पर रेस्टोरेंट ओनर्स ₹499/महीना भेजेंगे
 export const ADMIN_UPI_ID = "9412008542@ptyes";
