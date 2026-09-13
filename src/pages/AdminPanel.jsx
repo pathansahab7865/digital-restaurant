@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { collection, onSnapshot, doc, updateDoc, query, orderBy } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "../firebase.js";
 import { ADMIN_EMAIL } from "../config.js";
 import { useLanguage } from "../i18n.jsx";
@@ -8,7 +9,18 @@ import LanguageToggle from "../components/LanguageToggle.jsx";
 export default function AdminPanel() {
   const { t } = useLanguage();
   const [restaurants, setRestaurants] = useState([]);
-  const isAdmin = auth.currentUser?.email === ADMIN_EMAIL;
+  const [authChecked, setAuthChecked] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // पेज सीधे खोलने पर Firebase को लॉगिन स्टेटस पता करने में एक पल लगता है —
+  // उसका इंतज़ार करना ज़रूरी है, वरना गलती से "access नहीं" दिख जाता है
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (user) => {
+      setIsAdmin(user?.email === ADMIN_EMAIL);
+      setAuthChecked(true);
+    });
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -27,6 +39,10 @@ export default function AdminPanel() {
     if (status === "active") return t("statusActive");
     if (status === "pending_verification") return t("statusPendingVerification");
     return t("statusPendingPayment");
+  }
+
+  if (!authChecked) {
+    return <div className="screen" />; // लोडिंग के दौरान खाली — गलत मैसेज दिखने से बचाने के लिए
   }
 
   if (!isAdmin) {

@@ -12,6 +12,7 @@ import {
   query,
   orderBy,
 } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
 import QRCode from "qrcode";
 import { auth, db } from "../firebase.js";
 import { useLanguage } from "../i18n.jsx";
@@ -19,7 +20,15 @@ import LanguageToggle from "../components/LanguageToggle.jsx";
 
 export default function Dashboard() {
   const { t } = useLanguage();
-  const uid = auth.currentUser?.uid;
+  const [uid, setUid] = useState(null);
+
+  // पेज सीधे खोलने/रिफ्रेश करने पर Firebase को लॉगिन स्टेटस पता करने में एक पल लगता है — उसका इंतज़ार करना ज़रूरी है
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (user) => {
+      setUid(user?.uid || null);
+    });
+    return () => unsub();
+  }, []);
 
   const [items, setItems] = useState([]);
   const [orders, setOrders] = useState([]);
