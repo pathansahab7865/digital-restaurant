@@ -22,6 +22,10 @@ export default function OwnerSignUp() {
   const [email, setEmail] = useState("");
   const [restaurantName, setRestaurantName] = useState("");
   const [upiId, setUpiId] = useState("");
+  const [googleBusiness, setGoogleBusiness] = useState("");
+  const [instagram, setInstagram] = useState("");
+  const [facebook, setFacebook] = useState("");
+  const [website, setWebsite] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [subQr, setSubQr] = useState("");
@@ -126,10 +130,27 @@ export default function OwnerSignUp() {
         status: "pending_payment",
         createdAt: serverTimestamp(),
       });
-      setStep(4);
+      setStep("social");
     } catch (err) {
       console.error(err);
       setError(t("errorSaveFail"));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleSaveSocial(e) {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const uid = auth.currentUser.uid;
+      await setDoc(doc(db, "restaurants", uid), {
+        googleBusiness: googleBusiness.trim() || null,
+        instagram: instagram.trim() || null,
+        facebook: facebook.trim() || null,
+        website: website.trim() || null,
+      }, { merge: true });
+      setStep(4);
     } finally {
       setLoading(false);
     }
@@ -157,11 +178,32 @@ export default function OwnerSignUp() {
           {step === "linkSent" && t("subtitleLinkSent")}
           {step === "confirmEmail" && t("subtitleConfirmEmail")}
           {step === 3 && t("subtitleStep3")}
+          {step === "social" && t("subtitleSocialStep")}
           {step === 4 && t("subtitleSubscription")}
         </p>
       </div>
 
       <div className="card">
+        {step === "social" && (
+          <form onSubmit={handleSaveSocial}>
+            <label className="muted">{t("googleBusinessLabel")}</label>
+            <input className="field" style={{ marginTop: 6 }} value={googleBusiness} onChange={(e) => setGoogleBusiness(e.target.value)} placeholder={t("linkPlaceholder")} />
+
+            <label className="muted">{t("instagramLabel")}</label>
+            <input className="field" style={{ marginTop: 6 }} value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder={t("linkPlaceholder")} />
+
+            <label className="muted">{t("facebookLabel")}</label>
+            <input className="field" style={{ marginTop: 6 }} value={facebook} onChange={(e) => setFacebook(e.target.value)} placeholder={t("linkPlaceholder")} />
+
+            <label className="muted">{t("websiteLabel")}</label>
+            <input className="field" style={{ marginTop: 6 }} value={website} onChange={(e) => setWebsite(e.target.value)} placeholder={t("linkPlaceholder")} />
+
+            <button className="btn-primary" disabled={loading} type="submit">
+              {loading ? t("savingBtn") : t("continueBtn")}
+            </button>
+          </form>
+        )}
+
         {step === 4 && (
           <div style={{ textAlign: "center" }}>
             <p style={{ fontWeight: 700, fontSize: 18, marginBottom: 4 }}>₹{SUBSCRIPTION_PRICE} / {t("perMonthLabel")}</p>

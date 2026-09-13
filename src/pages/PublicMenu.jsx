@@ -131,11 +131,42 @@ export default function PublicMenu() {
 
   // ---------- सक्सेस स्क्रीन ----------
   if (view === "success") {
+    const socialLinks = [
+      { key: "googleBusiness", label: "Google Business", icon: "📍" },
+      { key: "instagram", label: "Instagram", icon: "📷" },
+      { key: "facebook", label: "Facebook", icon: "👍" },
+      { key: "website", label: "Website", icon: "🌐" },
+    ].filter((l) => restaurant[l.key]);
+
     return (
       <div className="screen" style={{ textAlign: "center", paddingTop: 80 }}>
         <div style={{ fontSize: 44, marginBottom: 14 }}>🎉</div>
         <h1 style={{ fontSize: 22, marginBottom: 8 }}>{t("orderSuccessTitle")}</h1>
         <p className="muted" style={{ marginBottom: 24 }}>{t("orderSuccessSubtitle")}</p>
+
+        {socialLinks.length > 0 && (
+          <div style={{ marginBottom: 28 }}>
+            <p className="muted" style={{ fontSize: 13, marginBottom: 10 }}>{t("followUsTitle")}</p>
+            <div style={{ display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
+              {socialLinks.map((l) => (
+                <a
+                  key={l.key}
+                  href={restaurant[l.key]}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: "flex", alignItems: "center", gap: 6,
+                    background: "var(--paper)", color: "var(--ink)",
+                    padding: "8px 14px", borderRadius: 20, fontSize: 12.5, fontWeight: 600, textDecoration: "none",
+                  }}
+                >
+                  <span>{l.icon}</span> {l.label}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
         <button className="btn-primary" onClick={() => setView("menu")}>{t("newOrderBtn")}</button>
       </div>
     );
