@@ -4,6 +4,7 @@ import {
   addDoc,
   deleteDoc,
   doc,
+  updateDoc,
   onSnapshot,
   serverTimestamp,
   query,
@@ -19,6 +20,7 @@ export default function Dashboard() {
   const uid = auth.currentUser?.uid;
 
   const [items, setItems] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [copied, setCopied] = useState(false);
@@ -45,6 +47,20 @@ export default function Dashboard() {
     });
     return () => unsub();
   }, [uid]);
+
+  // लाइव ऑर्डर सुनना — नए ऑर्डर सबसे ऊपर दिखेंगे
+  useEffect(() => {
+    if (!uid) return;
+    const q = query(collection(db, "restaurants", uid, "orders"), orderBy("createdAt", "desc"));
+    const unsub = onSnapshot(q, (snap) => {
+      setOrders(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    });
+    return () => unsub();
+  }, [uid]);
+
+  async function handleMarkServed(orderId) {
+    await updateDoc(doc(db, "restaurants", uid, "orders", orderId), { status: "served" });
+  }
 
   // QR कोड जनरेट करना
   useEffect(() => {
@@ -169,6 +185,47 @@ export default function Dashboard() {
         >
           {copied ? t("copiedText") : t("copyLinkBtn")}
         </button>
+      </div>
+
+      {/* लाइव ऑर्डर सेक्शन */}
+      <div style={{ marginTop: 28 }}>
+        <h2 style={{ fontSize: 19, marginBottom: 12 }}>{t("ordersSectionTitle")}</h2>
+        {orders.length === 0 && (
+          <p className="muted" style={{ fontSize: 13.5, marginBottom: 16 }}>{t("ordersEmptyState")}</p>
+        )}
+        {orders.map((order) => (
+          <div key={order.id} className="card" style={{ marginBottom: 10, padding: "14px 16px", opacity: order.status === "served" ? 0.55 : 1 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+              <div style={{ fontFamily: "Fraunces, serif", fontWeight: 600, fontSize: 15 }}>
+                {t("orderTableLabel")} #{order.tableNumber}
+              </div>
+              <span style={{
+                fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 12,
+                background: order.status === "served" ? "#D8D2BE" : "var(--turmeric)",
+                color: "var(--ink)",
+              }}>
+                {order.status === "served" ? t("orderStatusServed") : t("orderStatusNew")}
+              </span>
+            </div>
+            {(order.items || []).map((it, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "2px 0" }}>
+                <span>{it.name}{it.variantLabel ? ` (${it.variantLabel})` : ""} × {it.qty}</span>
+                <span style={{ color: "var(--chili)", fontWeight: 600 }}>₹{it.price * it.qty}</span>
+              </div>
+            ))}
+            <div style={{ borderTop: "1px solid rgba(28,27,25,0.15)", marginTop: 8, paddingTop: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontWeight: 700, fontSize: 13.5 }}>{t("orderTotalLabel")}: ₹{order.total}</span>
+              {order.status !== "served" && (
+                <button
+                  onClick={() => handleMarkServed(order.id)}
+                  style={{ background: "var(--turmeric)", border: "none", borderRadius: 3, padding: "6px 12px", fontWeight: 700, fontSize: 11.5, color: "var(--ink)" }}
+                >
+                  {t("markServedBtn")}
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* मेन्यू सेक्शन */}

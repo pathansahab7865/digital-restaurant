@@ -14,6 +14,13 @@ service cloud.firestore {
         // सिर्फ उस रेस्टोरेंट का ओनर ही अपने मेन्यू में आइटम जोड़/हटा/बदल सकता है
         allow write: if request.auth != null && request.auth.uid == restaurantId;
       }
+
+      match /orders/{orderId} {
+        // कोई भी कस्टमर (बिना लॉगिन के भी) नया ऑर्डर बना सकता है
+        allow create: if true;
+        // सिर्फ रेस्टोरेंट का ओनर ही ऑर्डर पढ़/अपडेट/डिलीट कर सकता है (दूसरे कस्टमर का ऑर्डर कोई और नहीं देख सकता)
+        allow read, update, delete: if request.auth != null && request.auth.uid == restaurantId;
+      }
     }
   }
 }
