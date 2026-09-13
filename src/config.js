@@ -5,7 +5,7 @@
 export const ADMIN_EMAIL = "i87939879@gmail.com";
 
 // ये आपकी अपनी UPI ID है, जिस पर रेस्टोरेंट ओनर्स ₹499/महीना भेजेंगे
-export const ADMIN_UPI_ID = "9412008542@ptyes";
+export const ADMIN_UPI_ID = "yourupi@bank";
 
 // हर महीने का सब्सक्रिप्शन प्राइस
 export const SUBSCRIPTION_PRICE = 499;

@@ -5,6 +5,7 @@ import { auth, db } from "../firebase.js";
 import { ADMIN_EMAIL } from "../config.js";
 import { useLanguage } from "../i18n.jsx";
 import LanguageToggle from "../components/LanguageToggle.jsx";
+import LogoutButton from "../components/LogoutButton.jsx";
 
 export default function AdminPanel() {
   const { t } = useLanguage();
@@ -48,7 +49,10 @@ export default function AdminPanel() {
   if (!isAdmin) {
     return (
       <div className="screen" style={{ textAlign: "center", paddingTop: 100 }}>
-        <LanguageToggle />
+        <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 20 }}>
+          <LogoutButton />
+          <LanguageToggle />
+        </div>
         <p className="muted">{t("adminNoAccess")}</p>
       </div>
     );
@@ -56,7 +60,10 @@ export default function AdminPanel() {
 
   return (
     <div className="screen" style={{ maxWidth: 560 }}>
-      <LanguageToggle />
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginBottom: 12 }}>
+        <LogoutButton />
+        <LanguageToggle />
+      </div>
       <h1 style={{ fontSize: 24, marginBottom: 18 }}>{t("adminPanelTitle")}</h1>
 
       {restaurants.length === 0 && <p className="muted">{t("noRestaurantsYet")}</p>}

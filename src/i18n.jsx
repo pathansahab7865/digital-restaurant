@@ -116,6 +116,7 @@ const translations = {
     statusPendingVerification: "वेरिफिकेशन बाकी",
     statusActive: "एक्टिव",
     noRestaurantsYet: "अभी कोई रेस्टोरेंट रजिस्टर नहीं हुआ।",
+    logoutBtn: "लॉगआउट",
   },
   en: {
     signupTitle: "Register Your Restaurant",
@@ -230,6 +231,7 @@ const translations = {
     statusPendingVerification: "Verification Pending",
     statusActive: "Active",
     noRestaurantsYet: "No restaurants registered yet.",
+    logoutBtn: "Logout",
   },
 };
 

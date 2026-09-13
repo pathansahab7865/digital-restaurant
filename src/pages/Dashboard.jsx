@@ -17,6 +17,7 @@ import QRCode from "qrcode";
 import { auth, db } from "../firebase.js";
 import { useLanguage } from "../i18n.jsx";
 import LanguageToggle from "../components/LanguageToggle.jsx";
+import LogoutButton from "../components/LogoutButton.jsx";
 
 export default function Dashboard() {
   const { t } = useLanguage();
@@ -192,7 +193,10 @@ export default function Dashboard() {
 
   return (
     <div className="screen" style={{ maxWidth: 480 }}>
-      <LanguageToggle />
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginBottom: 12 }}>
+        <LogoutButton />
+        <LanguageToggle />
+      </div>
       <h1 style={{ fontSize: 24, marginBottom: 4 }}>{t("dashboardTitle")}</h1>
 
       {restaurantStatus && restaurantStatus !== "active" && (
