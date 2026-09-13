@@ -1,49 +1,72 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  RecaptchaVerifier,
-  signInWithPhoneNumber,
+  sendSignInLinkToEmail,
+  isSignInWithEmailLink,
+  signInWithEmailLink,
 } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../firebase.js";
 import { useLanguage } from "../i18n.jsx";
 import LanguageToggle from "../components/LanguageToggle.jsx";
 
-// स्टेप: 1 = फोन नंबर डालना, 2 = OTP डालना, 3 = रेस्टोरेंट का नाम डालना
+const EMAIL_STORAGE_KEY = "emailForSignIn";
+
+// स्टेप: 1 = ईमेल डालना (लिंक भेजना), "linkSent" = लिंक भेज दिया गया इंतज़ार में,
+// 2 = लिंक से वापस आकर ईमेल कन्फर्म करना (अगर ज़रूरत पड़े), 3 = रेस्टोरेंट का नाम डालना
 export default function OwnerSignUp() {
   const { t } = useLanguage();
   const [step, setStep] = useState(1);
-  const [phone, setPhone] = useState("");
-  const [otp, setOtp] = useState("");
+  const [email, setEmail] = useState("");
   const [restaurantName, setRestaurantName] = useState("");
-  const [confirmation, setConfirmation] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  function setupRecaptcha() {
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
-        size: "invisible",
-      });
+  // पेज लोड होते ही चेक करें — क्या यूज़र अभी-अभी अपने ईमेल में आए लिंक पर क्लिक करके वापस आया है?
+  useEffect(() => {
+    async function tryCompleteSignIn() {
+      if (isSignInWithEmailLink(auth, window.location.href)) {
+        let storedEmail = window.localStorage.getItem(EMAIL_STORAGE_KEY);
+        if (!storedEmail) {
+          // अगर यूज़र ने दूसरे डिवाइस/ब्राउज़र में लिंक खोला है, तो ईमेल दोबारा पूछना पड़ेगा
+          setStep("confirmEmail");
+          return;
+        }
+        setLoading(true);
+        try {
+          await signInWithEmailLink(auth, storedEmail, window.location.href);
+          window.localStorage.removeItem(EMAIL_STORAGE_KEY);
+          window.history.replaceState({}, document.title, "/"); // URL साफ़ कर दें
+          setStep(3);
+        } catch (err) {
+          console.error(err);
+          setError(t("errorOtpWrong"));
+        } finally {
+          setLoading(false);
+        }
+      }
     }
-    return window.recaptchaVerifier;
-  }
+    tryCompleteSignIn();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  async function handleSendOtp(e) {
+  async function handleSendLink(e) {
     e.preventDefault();
     setError("");
-    if (!/^\d{10}$/.test(phone)) {
-      setError(t("errorPhoneInvalid"));
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError(t("errorEmailInvalid"));
       return;
     }
     setLoading(true);
     try {
-      const verifier = setupRecaptcha();
-      const fullNumber = "+91" + phone;
-      const result = await signInWithPhoneNumber(auth, fullNumber, verifier);
-      setConfirmation(result);
-      setStep(2);
+      const actionCodeSettings = {
+        url: window.location.origin + "/",
+        handleCodeInApp: true,
+      };
+      await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+      window.localStorage.setItem(EMAIL_STORAGE_KEY, email);
+      setStep("linkSent");
     } catch (err) {
       console.error(err);
       setError(t("errorOtpSendFail"));
@@ -52,16 +75,18 @@ export default function OwnerSignUp() {
     }
   }
 
-  async function handleVerifyOtp(e) {
+  async function handleConfirmEmail(e) {
     e.preventDefault();
     setError("");
-    if (otp.length !== 6) {
-      setError(t("errorOtpInvalid"));
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError(t("errorEmailInvalid"));
       return;
     }
     setLoading(true);
     try {
-      await confirmation.confirm(otp);
+      await signInWithEmailLink(auth, email, window.location.href);
+      window.localStorage.removeItem(EMAIL_STORAGE_KEY);
+      window.history.replaceState({}, document.title, "/");
       setStep(3);
     } catch (err) {
       console.error(err);
@@ -82,9 +107,9 @@ export default function OwnerSignUp() {
     try {
       const uid = auth.currentUser.uid;
       await setDoc(doc(db, "restaurants", uid), {
-        ownerPhone: "+91" + phone,
+        ownerEmail: auth.currentUser.email,
         restaurantName: restaurantName.trim(),
-        status: "pending_payment", // अभी पेमेंट स्टेप नहीं बना, इसलिए pending रखा है
+        status: "pending_payment",
         createdAt: serverTimestamp(),
       });
       navigate("/dashboard");
@@ -103,42 +128,49 @@ export default function OwnerSignUp() {
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 26, fontWeight: 600 }}>{t("signupTitle")}</h1>
         <p className="muted" style={{ marginTop: 6 }}>
-          {step === 1 && t("subtitleStep1")}
-          {step === 2 && t("subtitleStep2")}
+          {step === 1 && t("subtitleEmailStep")}
+          {step === "linkSent" && t("subtitleLinkSent")}
+          {step === "confirmEmail" && t("subtitleConfirmEmail")}
           {step === 3 && t("subtitleStep3")}
         </p>
       </div>
 
       <div className="card">
         {step === 1 && (
-          <form onSubmit={handleSendOtp}>
-            <label className="muted">{t("mobileLabel")}</label>
+          <form onSubmit={handleSendLink}>
+            <label className="muted">{t("emailLabel")}</label>
             <input
               className="field"
-              type="tel"
-              placeholder={t("mobilePlaceholder")}
-              value={phone}
-              onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
-              maxLength={10}
+              type="email"
+              placeholder={t("emailPlaceholder")}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               style={{ marginTop: 6 }}
             />
             {error && <div className="error-text">{error}</div>}
             <button className="btn-primary" disabled={loading} type="submit">
-              {loading ? t("sendingBtn") : t("sendOtpBtn")}
+              {loading ? t("sendingBtn") : t("sendLinkBtn")}
             </button>
           </form>
         )}
 
-        {step === 2 && (
-          <form onSubmit={handleVerifyOtp}>
-            <label className="muted">{t("otpLabel")}</label>
+        {step === "linkSent" && (
+          <div style={{ textAlign: "center", padding: "10px 0" }}>
+            <div style={{ fontSize: 36, marginBottom: 10 }}>📧</div>
+            <p style={{ fontWeight: 600, marginBottom: 6 }}>{email}</p>
+            <p className="muted" style={{ fontSize: 13 }}>{t("checkInboxText")}</p>
+          </div>
+        )}
+
+        {step === "confirmEmail" && (
+          <form onSubmit={handleConfirmEmail}>
+            <label className="muted">{t("emailLabel")}</label>
             <input
               className="field"
-              type="text"
-              placeholder={t("otpPlaceholder")}
-              value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-              maxLength={6}
+              type="email"
+              placeholder={t("emailPlaceholder")}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               style={{ marginTop: 6 }}
             />
             {error && <div className="error-text">{error}</div>}
@@ -166,9 +198,6 @@ export default function OwnerSignUp() {
           </form>
         )}
       </div>
-
-      {/* invisible reCAPTCHA — यूज़र को कुछ दिखेगा नहीं, ये सिर्फ बॉट रोकने के लिए है */}
-      <div id="recaptcha-container"></div>
     </div>
   );
 }
