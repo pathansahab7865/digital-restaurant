@@ -6,7 +6,9 @@ import {
   signInWithEmailLink,
 } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import QRCode from "qrcode";
 import { auth, db } from "../firebase.js";
+import { ADMIN_UPI_ID, SUBSCRIPTION_PRICE } from "../config.js";
 import { useLanguage } from "../i18n.jsx";
 import LanguageToggle from "../components/LanguageToggle.jsx";
 
@@ -22,7 +24,17 @@ export default function OwnerSignUp() {
   const [upiId, setUpiId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [subQr, setSubQr] = useState("");
   const navigate = useNavigate();
+
+  const subUpiLink = `upi://pay?pa=${encodeURIComponent(ADMIN_UPI_ID)}&pn=RestaurantApp&am=${SUBSCRIPTION_PRICE}&cu=INR`;
+
+  useEffect(() => {
+    if (step === 4) {
+      QRCode.toDataURL(subUpiLink, { width: 200, margin: 1 }).then(setSubQr);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
 
   // पेज लोड होते ही चेक करें — क्या यूज़र अभी-अभी अपने ईमेल में आए लिंक पर क्लिक करके वापस आया है?
   useEffect(() => {
@@ -114,10 +126,21 @@ export default function OwnerSignUp() {
         status: "pending_payment",
         createdAt: serverTimestamp(),
       });
-      navigate("/dashboard");
+      setStep(4);
     } catch (err) {
       console.error(err);
       setError(t("errorSaveFail"));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleMarkPaid() {
+    setLoading(true);
+    try {
+      const uid = auth.currentUser.uid;
+      await setDoc(doc(db, "restaurants", uid), { status: "pending_verification" }, { merge: true });
+      navigate("/dashboard");
     } finally {
       setLoading(false);
     }
@@ -134,10 +157,30 @@ export default function OwnerSignUp() {
           {step === "linkSent" && t("subtitleLinkSent")}
           {step === "confirmEmail" && t("subtitleConfirmEmail")}
           {step === 3 && t("subtitleStep3")}
+          {step === 4 && t("subtitleSubscription")}
         </p>
       </div>
 
       <div className="card">
+        {step === 4 && (
+          <div style={{ textAlign: "center" }}>
+            <p style={{ fontWeight: 700, fontSize: 18, marginBottom: 4 }}>₹{SUBSCRIPTION_PRICE} / {t("perMonthLabel")}</p>
+            <p className="muted" style={{ fontSize: 12.5, marginBottom: 14 }}>{t("subscriptionInstructions")}</p>
+            {subQr && <img src={subQr} alt="Subscription UPI QR" style={{ width: 180, height: 180, margin: "0 auto 14px" }} />}
+            <a
+              href={subUpiLink}
+              style={{
+                display: "inline-block", background: "var(--ink)", color: "var(--paper)",
+                padding: "8px 16px", borderRadius: 3, fontSize: 12.5, fontWeight: 600, textDecoration: "none", marginBottom: 16,
+              }}
+            >
+              {t("openUpiAppBtn")}
+            </a>
+            <button className="btn-primary" onClick={handleMarkPaid} disabled={loading}>
+              {loading ? t("savingBtn") : t("paidSubscriptionBtn")}
+            </button>
+          </div>
+        )}
         {step === 1 && (
           <form onSubmit={handleSendLink}>
             <label className="muted">{t("emailLabel")}</label>

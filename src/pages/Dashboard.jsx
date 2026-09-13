@@ -27,6 +27,7 @@ export default function Dashboard() {
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [copied, setCopied] = useState(false);
   const [upiId, setUpiIdState] = useState("");
+  const [restaurantStatus, setRestaurantStatus] = useState(null);
   const [editingUpi, setEditingUpi] = useState(false);
   const [savingUpi, setSavingUpi] = useState(false);
 
@@ -57,7 +58,10 @@ export default function Dashboard() {
   useEffect(() => {
     if (!uid) return;
     getDoc(doc(db, "restaurants", uid)).then((snap) => {
-      if (snap.exists()) setUpiIdState(snap.data().upiId || "");
+      if (snap.exists()) {
+        setUpiIdState(snap.data().upiId || "");
+        setRestaurantStatus(snap.data().status || null);
+      }
     });
   }, [uid]);
 
@@ -181,6 +185,15 @@ export default function Dashboard() {
     <div className="screen" style={{ maxWidth: 480 }}>
       <LanguageToggle />
       <h1 style={{ fontSize: 24, marginBottom: 4 }}>{t("dashboardTitle")}</h1>
+
+      {restaurantStatus && restaurantStatus !== "active" && (
+        <div style={{
+          background: "rgba(217,164,65,0.15)", border: "1px solid rgba(217,164,65,0.4)",
+          borderRadius: 3, padding: "10px 14px", fontSize: 13, marginTop: 10, marginBottom: 4,
+        }}>
+          {restaurantStatus === "pending_verification" ? t("pendingVerificationBanner") : t("pendingPaymentBanner")}
+        </div>
+      )}
 
       {/* QR कोड सेक्शन */}
       <div className="card" style={{ marginTop: 20, textAlign: "center" }}>
