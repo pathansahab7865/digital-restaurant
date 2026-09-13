@@ -19,6 +19,7 @@ export default function OwnerSignUp() {
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState("");
   const [restaurantName, setRestaurantName] = useState("");
+  const [upiId, setUpiId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -109,6 +110,7 @@ export default function OwnerSignUp() {
       await setDoc(doc(db, "restaurants", uid), {
         ownerEmail: auth.currentUser.email,
         restaurantName: restaurantName.trim(),
+        upiId: upiId.trim() || null,
         status: "pending_payment",
         createdAt: serverTimestamp(),
       });
@@ -191,6 +193,16 @@ export default function OwnerSignUp() {
               onChange={(e) => setRestaurantName(e.target.value)}
               style={{ marginTop: 6 }}
             />
+            <label className="muted">{t("upiIdLabel")}</label>
+            <input
+              className="field"
+              type="text"
+              placeholder={t("upiIdPlaceholder")}
+              value={upiId}
+              onChange={(e) => setUpiId(e.target.value)}
+              style={{ marginTop: 6 }}
+            />
+            <p className="muted" style={{ fontSize: 11.5, marginTop: -8, marginBottom: 14 }}>{t("upiIdHelpText")}</p>
             {error && <div className="error-text">{error}</div>}
             <button className="btn-primary" disabled={loading} type="submit">
               {loading ? t("savingBtn") : t("continueBtn")}

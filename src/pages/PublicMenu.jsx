@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import {
   collection, query, orderBy, onSnapshot, doc, getDoc, addDoc, serverTimestamp,
 } from "firebase/firestore";
+import QRCode from "qrcode";
 import { db } from "../firebase.js";
 import { useLanguage } from "../i18n.jsx";
 import LanguageToggle from "../components/LanguageToggle.jsx";
@@ -21,6 +22,8 @@ export default function PublicMenu() {
   const [cart, setCart] = useState({}); // key -> { name, variantLabel, price, qty }
   const [view, setView] = useState("menu"); // "menu" | "checkout" | "success"
   const [tableNumber, setTableNumber] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [upiQr, setUpiQr] = useState("");
   const [error, setError] = useState("");
   const [placing, setPlacing] = useState(false);
 
@@ -64,6 +67,16 @@ export default function PublicMenu() {
   const cartCount = cartLines.reduce((sum, l) => sum + l.qty, 0);
   const cartTotal = cartLines.reduce((sum, l) => sum + l.qty * l.price, 0);
 
+  const upiLink = restaurant?.upiId
+    ? `upi://pay?pa=${encodeURIComponent(restaurant.upiId)}&pn=${encodeURIComponent(restaurant.restaurantName || "Restaurant")}&am=${cartTotal}&cu=INR`
+    : "";
+
+  useEffect(() => {
+    if (paymentMethod === "upi" && upiLink) {
+      QRCode.toDataURL(upiLink, { width: 200, margin: 1 }).then(setUpiQr);
+    }
+  }, [paymentMethod, upiLink]);
+
   async function handleConfirmOrder(e) {
     e.preventDefault();
     setError("");
@@ -86,6 +99,7 @@ export default function PublicMenu() {
           qty: l.qty,
         })),
         total: cartTotal,
+        paymentMethod,
         status: "new",
         createdAt: serverTimestamp(),
       });
@@ -149,9 +163,52 @@ export default function PublicMenu() {
         <form onSubmit={handleConfirmOrder} className="card">
           <label className="muted">{t("tableNumberLabel")}</label>
           <input className="field" style={{ marginTop: 6 }} value={tableNumber} onChange={(e) => setTableNumber(e.target.value)} placeholder={t("tableNumberPlaceholder")} />
+
+          <label className="muted">{t("paymentMethodLabel")}</label>
+          <div style={{ display: "flex", gap: 8, marginTop: 6, marginBottom: 14 }}>
+            <button
+              type="button"
+              onClick={() => setPaymentMethod("cash")}
+              style={{
+                flex: 1, padding: "10px", borderRadius: 3, border: "1px solid rgba(28,27,25,0.2)",
+                background: paymentMethod === "cash" ? "var(--turmeric)" : "#fff", fontWeight: 600, fontSize: 13,
+              }}
+            >
+              {t("payCash")}
+            </button>
+            {restaurant?.upiId && (
+              <button
+                type="button"
+                onClick={() => setPaymentMethod("upi")}
+                style={{
+                  flex: 1, padding: "10px", borderRadius: 3, border: "1px solid rgba(28,27,25,0.2)",
+                  background: paymentMethod === "upi" ? "var(--turmeric)" : "#fff", fontWeight: 600, fontSize: 13,
+                }}
+              >
+                {t("payUpi")}
+              </button>
+            )}
+          </div>
+
+          {paymentMethod === "upi" && restaurant?.upiId && (
+            <div style={{ textAlign: "center", marginBottom: 16 }}>
+              <p className="muted" style={{ fontSize: 12.5, marginBottom: 10 }}>{t("upiInstructions")}</p>
+              {upiQr && <img src={upiQr} alt="UPI QR" style={{ width: 160, height: 160, margin: "0 auto 10px" }} />}
+              <a
+                href={upiLink}
+                style={{
+                  display: "inline-block", background: "var(--ink)", color: "var(--paper)",
+                  padding: "8px 16px", borderRadius: 3, fontSize: 12.5, fontWeight: 600, textDecoration: "none",
+                }}
+              >
+                {t("openUpiAppBtn")}
+              </a>
+            </div>
+          )}
+
           {error && <div className="error-text">{error}</div>}
           <button className="btn-primary" type="submit" disabled={placing} style={{ marginBottom: 10 }}>
-            {t("confirmOrderBtn")}
+            {paymentMethod === "upi" ? t("paidConfirmBtn") : t("confirmOrderBtn")}
           </button>
           <button
             type="button"

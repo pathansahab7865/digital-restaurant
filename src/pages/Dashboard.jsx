@@ -4,6 +4,8 @@ import {
   addDoc,
   deleteDoc,
   doc,
+  getDoc,
+  setDoc,
   updateDoc,
   onSnapshot,
   serverTimestamp,
@@ -24,6 +26,9 @@ export default function Dashboard() {
   const [showForm, setShowForm] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [copied, setCopied] = useState(false);
+  const [upiId, setUpiIdState] = useState("");
+  const [editingUpi, setEditingUpi] = useState(false);
+  const [savingUpi, setSavingUpi] = useState(false);
 
   // फॉर्म फील्ड्स
   const [name, setName] = useState("");
@@ -47,6 +52,24 @@ export default function Dashboard() {
     });
     return () => unsub();
   }, [uid]);
+
+  // रेस्टोरेंट प्रोफाइल (UPI ID वगैरह) लाना
+  useEffect(() => {
+    if (!uid) return;
+    getDoc(doc(db, "restaurants", uid)).then((snap) => {
+      if (snap.exists()) setUpiIdState(snap.data().upiId || "");
+    });
+  }, [uid]);
+
+  async function handleSaveUpi() {
+    setSavingUpi(true);
+    try {
+      await setDoc(doc(db, "restaurants", uid), { upiId: upiId.trim() || null }, { merge: true });
+      setEditingUpi(false);
+    } finally {
+      setSavingUpi(false);
+    }
+  }
 
   // लाइव ऑर्डर सुनना — नए ऑर्डर सबसे ऊपर दिखेंगे
   useEffect(() => {
@@ -187,6 +210,30 @@ export default function Dashboard() {
         </button>
       </div>
 
+      {/* UPI सेटिंग */}
+      <div className="card" style={{ marginTop: 16 }}>
+        <label className="muted">{t("upiIdLabel")}</label>
+        {!editingUpi ? (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
+            <span style={{ fontSize: 14, fontWeight: 600 }}>{upiId || "—"}</span>
+            <button
+              onClick={() => setEditingUpi(true)}
+              style={{ background: "transparent", border: "1px solid rgba(28,27,25,0.2)", borderRadius: 3, padding: "5px 12px", fontSize: 12 }}
+            >
+              {t("editBtn")}
+            </button>
+          </div>
+        ) : (
+          <div style={{ marginTop: 6 }}>
+            <input className="field" value={upiId} onChange={(e) => setUpiIdState(e.target.value)} placeholder={t("upiIdPlaceholder")} />
+            <div style={{ display: "flex", gap: 8 }}>
+              <button className="btn-primary" onClick={handleSaveUpi} disabled={savingUpi} style={{ flex: 1 }}>{t("saveItemBtn")}</button>
+              <button onClick={() => setEditingUpi(false)} style={{ flex: 1, background: "transparent", border: "1px solid rgba(28,27,25,0.2)", borderRadius: 3, color: "var(--ink)" }}>{t("cancelBtn")}</button>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* लाइव ऑर्डर सेक्शन */}
       <div style={{ marginTop: 28 }}>
         <h2 style={{ fontSize: 19, marginBottom: 12 }}>{t("ordersSectionTitle")}</h2>
@@ -214,7 +261,14 @@ export default function Dashboard() {
               </div>
             ))}
             <div style={{ borderTop: "1px solid rgba(28,27,25,0.15)", marginTop: 8, paddingTop: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontWeight: 700, fontSize: 13.5 }}>{t("orderTotalLabel")}: ₹{order.total}</span>
+              <span style={{ fontWeight: 700, fontSize: 13.5 }}>
+                {t("orderTotalLabel")}: ₹{order.total}
+                {order.paymentMethod && (
+                  <span style={{ marginLeft: 8, fontWeight: 500, fontSize: 11.5, color: "#6B6552" }}>
+                    ({t("orderPaymentLabel")}: {order.paymentMethod === "upi" ? t("payUpi") : t("payCash")})
+                  </span>
+                )}
+              </span>
               {order.status !== "served" && (
                 <button
                   onClick={() => handleMarkServed(order.id)}
