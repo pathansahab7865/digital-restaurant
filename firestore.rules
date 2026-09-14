@@ -2,6 +2,14 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Username → ईमेल की मैपिंग (Sign In के लिए ज़रूरी) — कोई भी पढ़ सकता है (सिर्फ लुकअप के लिए),
+    // पर सिर्फ अपने लिए ही नया username बना सकता है, किसी और के लिए नहीं, और बदल/मिटा नहीं सकता
+    match /usernames/{username} {
+      allow read: if true;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
+      allow update, delete: if false;
+    }
+
     match /restaurants/{restaurantId} {
       // कोई भी (बिना लॉगिन के भी) रेस्टोरेंट प्रोफाइल पढ़ सकता है — कस्टमर के मेन्यू पेज के लिए ज़रूरी है
       allow read: if true;
