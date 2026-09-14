@@ -125,6 +125,15 @@ const translations = {
     statusActive: "एक्टिव",
     noRestaurantsYet: "अभी कोई रेस्टोरेंट रजिस्टर नहीं हुआ।",
     logoutBtn: "लॉगआउट",
+
+    clientsPageTitle: "हमारे साथ जुड़े रेस्टोरेंट",
+    clientsPageSubtitle: "ये सभी रेस्टोरेंट हमारे साथ अपना डिजिटल मेन्यू और ऑर्डरिंग चला रहे हैं।",
+    joinedSinceLabel: "साथ में",
+    noClientsYet: "अभी कोई क्लाइंट नहीं जुड़ा।",
+    daysAgo: "दिन से",
+    monthsAgo: "महीने से",
+    yearsAgo: "साल से",
+    todayLabel: "आज से",
   },
   en: {
     signupTitle: "Register Your Restaurant",
@@ -248,6 +257,15 @@ const translations = {
     statusActive: "Active",
     noRestaurantsYet: "No restaurants registered yet.",
     logoutBtn: "Logout",
+
+    clientsPageTitle: "Restaurants We Work With",
+    clientsPageSubtitle: "These restaurants are running their digital menu and ordering with us.",
+    joinedSinceLabel: "With us for",
+    noClientsYet: "No clients yet.",
+    daysAgo: "days",
+    monthsAgo: "months",
+    yearsAgo: "years",
+    todayLabel: "Joined today",
   },
 };
 
