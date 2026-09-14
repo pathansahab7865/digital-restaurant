@@ -134,6 +134,11 @@ const translations = {
     monthsAgo: "महीने से",
     yearsAgo: "साल से",
     todayLabel: "आज से",
+
+    renewalDueLabel: "रिन्यूअल",
+    daysLeftLabel: "दिन बाकी",
+    expiredLabel: "एक्सपायर हो चुका",
+    sendReminderBtn: "रिमाइंडर भेजें",
   },
   en: {
     signupTitle: "Register Your Restaurant",
@@ -266,6 +271,11 @@ const translations = {
     monthsAgo: "months",
     yearsAgo: "years",
     todayLabel: "Joined today",
+
+    renewalDueLabel: "Renewal",
+    daysLeftLabel: "days left",
+    expiredLabel: "Expired",
+    sendReminderBtn: "Send Reminder",
   },
 };
 
